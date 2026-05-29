@@ -3,6 +3,7 @@
 // =============================================================
 
 // ─── 1. Importações das Dependências ─────────────────────────
+const rotasProdutos = require('./produtos');
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -19,6 +20,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(logger);
+
+// Vincula todas as rotas de produtos criadas no arquivo separado
+app.use('/api/produtos', rotasProdutos);
 
 // ─── 5. Rota Raiz (Evita erro 404 de cara na Vercel) ─────────
 app.get('/', (req, res) => {
@@ -114,6 +118,7 @@ app.use((req, res, next) => {
 
 // ─── 8. Middleware de Erros Global (errorHandler) ─────────────
 app.use(errorHandler);
+
 
 
 // ─── 9. Inicializando o Servidor Local ────────────────────────
