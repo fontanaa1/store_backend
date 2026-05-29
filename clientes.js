@@ -1,11 +1,11 @@
 // routes/clientes.js
 const express = require('express');
 const router = express.Router();
-const supabase = require('../supabase');
+const supabase = require('./supabase'); 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'b7store_secret_key_2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'b7store_secret_key_2024'
 
 // 📝 CADASTRO DE CLIENTE
 router.post('/register', async (req, res, next) => {
