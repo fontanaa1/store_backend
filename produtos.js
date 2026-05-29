@@ -27,33 +27,47 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
-        const produtoId = parseInt(id);
         
-        const { data, error } = await supabase
+        console.log('Buscando produto com ID:', id);
+        console.log('Tipo do ID:', typeof id);
+        
+        // Tenta buscar sem converter para número primeiro
+        let { data, error } = await supabase
             .from('produtos')
             .select('*')
-            .eq('id', produtoId)
+            .eq('id', id)
             .single();
-
+        
+        // Se não achou com string, tenta com número
         if (error) {
+            console.log('Tentando com número...');
+            const numeroId = parseInt(id);
+            const result = await supabase
+                .from('produtos')
+                .select('*')
+                .eq('id', numeroId)
+                .single();
+            
+            data = result.data;
+            error = result.error;
+        }
+
+        if (error || !data) {
             console.error('Erro ao buscar produto:', error);
             return res.status(404).json({ 
                 sucesso: false,
-                error: "Produto não encontrado na loja." 
+                mensagem: "Produto não encontrado na loja." 
             });
         }
 
-        if (!data) {
-            return res.status(404).json({ 
-                sucesso: false,
-                error: "Produto não encontrado." 
-            });
-        }
-
+        console.log('Produto encontrado:', data);
         res.json(data);
     } catch (erro) {
         console.error('Erro no servidor:', erro);
-        next(erro);
+        res.status(500).json({ 
+            sucesso: false,
+            mensagem: "Erro interno ao buscar produto." 
+        });
     }
 });
 
