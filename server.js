@@ -38,6 +38,11 @@ app.get('/api', (req, res) => {
     });
 });
 
+// Adicione no server.js, depois das outras rotas
+const rotasClientes = require('./clientes');
+
+// Rotas de clientes
+app.use('/api/clientes', rotasClientes);
 
 // =============================
 // LOGIN ADMIN
