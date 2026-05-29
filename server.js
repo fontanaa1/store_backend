@@ -1,142 +1,112 @@
-// =============================================================
-// server.js — Servidor Principal da API do B7Store
-// =============================================================
-
-// ─── 1. Importações das Dependências ─────────────────────────
-const rotasProdutos = require('./produtos');
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-// ─── 2. Importação dos Módulos e Middlewares da Mesma Pasta ──
 const logger = require('./logger');
 const errorHandler = require('./errorHandler');
-const supabase = require('./supabase'); // Importa o supabase que está ao lado!
 
-// ─── 3. Criação da Aplicação Express ─────────────────────────
+const rotasProdutos = require('./produtos');
+
 const app = express();
 
-// ─── 4. Registro dos Middlewares Globais ─────────────────────
 app.use(cors());
 app.use(express.json());
 app.use(logger);
 
-// Vincula todas as rotas de produtos criadas no arquivo separado
+
+// =============================
+// ROTAS
+// =============================
+
 app.use('/api/produtos', rotasProdutos);
 
-// ─── 5. Rota Raiz (Evita erro 404 de cara na Vercel) ─────────
+
+// ROTA RAIZ
 app.get('/', (req, res) => {
-    res.json({ 
+    res.json({
         sucesso: true,
-        mensagem: '🛍️ Bem-vindo à API Oficial da Loja B7Store!' 
+        mensagem: '🛍️ API da B7Store funcionando!'
     });
 });
 
-// Mapeamento extra opcional para o caso de tentarem acessar /api
+
+// ROTA API
 app.get('/api', (req, res) => {
-    res.json({ 
+    res.json({
         sucesso: true,
-        mensagem: '📦 Endpoints da B7Store operacionais.' 
+        mensagem: '📦 API online.'
     });
 });
 
 
-// ─── 6. Rotas Oficiais da Loja (Sem subpastas para não quebrar) 
+// =============================
+// LOGIN ADMIN
+// =============================
 
-// ROTA: Buscar todos os produtos (Público para a Vitrine)
-app.get('/api/produtos', async (req, res, next) => {
-    try {
-        const { data, error } = await supabase
-            .from('produtos')
-            .select('*')
-            .order('criado_em', { ascending: false });
+const supabase = require('./supabase');
 
-        if (error) throw new Error(error.message);
-        return res.status(200).json(data);
-    } catch (err) {
-        next(err); // Repassa o erro para o errorHandler global
-    }
-});
-
-// ROTA: Login do Administrador (Gera Token)
 app.post('/api/auth/login', async (req, res, next) => {
     try {
+
         const { email, password } = req.body;
+
         if (!email || !password) {
-            return res.status(400).json({ sucesso: false, error: "E-mail e senha são obrigatórios." });
+            return res.status(400).json({
+                sucesso: false,
+                error: 'E-mail e senha obrigatórios.'
+            });
         }
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return res.status(401).json({ sucesso: false, error: "Acesso negado: " + error.message });
-
-        return res.status(200).json({ 
-            sucesso: true,
-            message: "Login efetuado com sucesso!", 
-            token: data.session.access_token 
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
         });
-    } catch (err) {
-        next(err);
-    }
-});
 
-// ROTA: Cadastrar Novo Produto (Protegido por Token JWT)
-app.post('/api/produtos', async (req, res, next) => {
-    try {
-        const { nome, preco, imagem_url, info } = req.body;
-        const authHeader = req.headers.authorization;
-        
-        if (!authHeader) return res.status(401).json({ sucesso: false, error: "Não autorizado. Token faltando." });
-        const token = authHeader.split(' ')[1];
-
-        // Valida se o Token pertence a uma sessão ativa no Supabase
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-        if (authError || !user) return res.status(401).json({ sucesso: false, error: "Sessão inválida ou expirada." });
-
-        if (!nome || !preco) {
-            return res.status(400).json({ sucesso: false, error: "Nome e preço são obrigatórios." });
+        if (error) {
+            return res.status(401).json({
+                sucesso: false,
+                error: error.message
+            });
         }
 
-        const { data, error } = await supabase
-            .from('produtos')
-            .insert([{ nome, preco: parseFloat(preco), imagem_url, info }]);
+        return res.json({
+            sucesso: true,
+            token: data.session.access_token
+        });
 
-        if (error) throw new Error(error.message);
-        return res.status(201).json({ sucesso: true, message: "Produto cadastrado com sucesso!" });
     } catch (err) {
         next(err);
     }
 });
 
 
-// ─── 7. Tratamento de Rota não encontrada (Erro 404) ──────────
-app.use((req, res, next) => {
+// =============================
+// 404
+// =============================
+
+app.use((req, res) => {
     res.status(404).json({
         sucesso: false,
-        mensagem: `Rota '${req.url}' não encontrada na API da B7Store.`
+        mensagem: 'Rota não encontrada.'
     });
 });
 
-// ─── 8. Middleware de Erros Global (errorHandler) ─────────────
+
+// =============================
+// ERROR HANDLER
+// =============================
+
 app.use(errorHandler);
 
 
+// =============================
+// SERVIDOR
+// =============================
 
-// ─── 9. Inicializando o Servidor Local ────────────────────────
-const PORTA = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-app.listen(PORTA, () => {
-    console.log('');
-    console.log(' ==========================================');
-    console.log(` 🛍️  Servidor da B7Store rodando com sucesso!`);
-    console.log(` Acesso Local: http://localhost:${PORTA}`);
-    console.log(' ==========================================');
-    console.log('');
-    console.log('📋 Rotas da API mapeadas na raiz:');
-    console.log(`   GET    /`);
-    console.log(`   GET    /api/produtos`);
-    console.log(`   POST   /api/auth/login`);
-    console.log(`   POST   /api/produtos`);
-    console.log('');
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
 
 module.exports = app;
