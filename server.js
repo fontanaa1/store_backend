@@ -8,8 +8,8 @@ const cors = require('cors');
 require('dotenv').config();
 
 // ─── 2. Importação dos Middlewares Customizados ───────────────
-const logger = require('./logger');
-const errorHandler = require('./errorHandler');
+const logger = require('./middlewares/logger');
+const errorHandler = require('./middlewares/errorHandler');
 
 // ─── 3. Importação das Rotas Modulares ────────────────────────
 const rotasLoja = require('./routes/loja'); // Importa o arquivo que criamos acima
