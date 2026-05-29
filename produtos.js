@@ -1,66 +1,99 @@
-// =============================================================
-// produtos.js — Rotas do Catálogo conectadas ao Supabase
-// =============================================================
 const express = require('express');
 const router = express.Router();
-const supabase = require('./supabase'); // Puxa a sua configuração do Supabase
 
-// 🔍 1. BUSCAR TODOS OS PRODUTOS (GET /api/produtos)
+const supabase = require('./supabase');
+
+
+// =============================
+// GET TODOS OS PRODUTOS
+// =============================
+
 router.get('/', async (req, res, next) => {
+
     try {
-        // Busca os produtos direto da tabela 'produtos' do seu Supabase
+
         const { data, error } = await supabase
             .from('produtos')
             .select('*')
             .order('id', { ascending: true });
 
         if (error) {
-            throw error; // Encaminha o erro para o errorHandler.js
+            throw error;
         }
 
-        // Devolve os dados reais salvos no Supabase
         res.json(data);
-    } catch (erro) {
-        next(erro);
+
+    } catch (err) {
+        next(err);
     }
+
 });
 
-// 🔍 2. BUSCAR UM PRODUTO ESPECÍFICO POR ID (GET /api/produtos/:id)
+
+// =============================
+// GET PRODUTO POR ID
+// =============================
+
 router.get('/:id', async (req, res, next) => {
+
     try {
+
         const { id } = req.params;
+
         const { data, error } = await supabase
             .from('produtos')
             .select('*')
             .eq('id', id)
-            .single(); // Traz apenas um objeto em vez de uma lista
+            .single();
 
         if (error) {
-            return res.status(404).json({ error: "Produto não encontrado no banco." });
-        }
-
-        res.json(data);
-    } catch (erro) {
-        next(erro);
-    }
-});
-
-// 💾 3. CADASTRAR UM NOVO PRODUTO (POST /api/produtos)
-router.post('/', async (req, res, next) => {
-    try {
-        const { nome, preco, imagem_url, info } = req.body;
-
-        if (!nome || !preco) {
-            return res.status(400).json({ 
-                sucesso: false, 
-                mensagem: "Nome e preço são obrigatórios!" 
+            return res.status(404).json({
+                sucesso: false,
+                mensagem: 'Produto não encontrado.'
             });
         }
 
-        // Insere o produto diretamente nas colunas da sua tabela do Supabase
+        res.json(data);
+
+    } catch (err) {
+        next(err);
+    }
+
+});
+
+
+// =============================
+// POST NOVO PRODUTO
+// =============================
+
+router.post('/', async (req, res, next) => {
+
+    try {
+
+        const {
+            nome,
+            preco,
+            imagem_url,
+            info
+        } = req.body;
+
+        if (!nome || !preco) {
+            return res.status(400).json({
+                sucesso: false,
+                mensagem: 'Nome e preço obrigatórios.'
+            });
+        }
+
         const { data, error } = await supabase
             .from('produtos')
-            .insert([{ nome, preco, imagem_url, info }])
+            .insert([
+                {
+                    nome,
+                    preco,
+                    imagem_url,
+                    info
+                }
+            ])
             .select();
 
         if (error) {
@@ -69,23 +102,41 @@ router.post('/', async (req, res, next) => {
 
         res.status(201).json({
             sucesso: true,
-            mensagem: "✨ Produto gravado com sucesso no Supabase!",
             produto: data[0]
         });
-    } catch (erro) {
-        next(erro);
+
+    } catch (err) {
+        next(err);
     }
+
 });
 
-// 📝 4. ATUALIZAR UM PRODUTO (PUT /api/produtos/:id)
+
+// =============================
+// PUT PRODUTO
+// =============================
+
 router.put('/:id', async (req, res, next) => {
+
     try {
+
         const { id } = req.params;
-        const { nome, preco, imagem_url, info } = req.body;
+
+        const {
+            nome,
+            preco,
+            imagem_url,
+            info
+        } = req.body;
 
         const { data, error } = await supabase
             .from('produtos')
-            .update({ nome, preco, imagem_url, info })
+            .update({
+                nome,
+                preco,
+                imagem_url,
+                info
+            })
             .eq('id', id)
             .select();
 
@@ -95,17 +146,24 @@ router.put('/:id', async (req, res, next) => {
 
         res.json({
             sucesso: true,
-            mensagem: "Produto atualizado com sucesso!",
             produto: data[0]
         });
-    } catch (erro) {
-        next(erro);
+
+    } catch (err) {
+        next(err);
     }
+
 });
 
-// ❌ 5. DELETAR UM PRODUTO (DELETE /api/produtos/:id)
+
+// =============================
+// DELETE PRODUTO
+// =============================
+
 router.delete('/:id', async (req, res, next) => {
+
     try {
+
         const { id } = req.params;
 
         const { error } = await supabase
@@ -117,13 +175,15 @@ router.delete('/:id', async (req, res, next) => {
             throw error;
         }
 
-        res.json({ 
-            sucesso: true, 
-            mensagem: `Produto #${id} removido com sucesso!` 
+        res.json({
+            sucesso: true,
+            mensagem: 'Produto removido.'
         });
-    } catch (erro) {
-        next(erro);
+
+    } catch (err) {
+        next(err);
     }
+
 });
 
 module.exports = router;
