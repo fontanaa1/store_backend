@@ -3,41 +3,40 @@
 // =============================================================
 const express = require('express');
 const router = express.Router();
-const supabase = require('./supabase'); // Importa a conexão do seu Supabase
+const supabase = require('./supabase'); // Puxa a sua configuração do Supabase
 
 // 🔍 1. BUSCAR TODOS OS PRODUTOS (GET /api/produtos)
 router.get('/', async (req, res, next) => {
     try {
-        // Busca os produtos diretamente na tabela do Supabase
+        // Busca os produtos direto da tabela 'produtos' do seu Supabase
         const { data, error } = await supabase
             .from('produtos')
             .select('*')
             .order('id', { ascending: true });
 
         if (error) {
-            throw error; // Joga o erro para o middleware errorHandler
+            throw error; // Encaminha o erro para o errorHandler.js
         }
 
-        // Retorna a lista vinda do banco (se estiver vazia no banco, retorna [])
+        // Devolve os dados reais salvos no Supabase
         res.json(data);
     } catch (erro) {
         next(erro);
     }
 });
 
-// 🔍 2. BUSCAR UM PRODUTO POR ID (GET /api/produtos/:id)
+// 🔍 2. BUSCAR UM PRODUTO ESPECÍFICO POR ID (GET /api/produtos/:id)
 router.get('/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
-
         const { data, error } = await supabase
             .from('produtos')
             .select('*')
             .eq('id', id)
-            .single(); // Traz apenas um único objeto em vez de uma lista
+            .single(); // Traz apenas um objeto em vez de uma lista
 
         if (error) {
-            return res.status(404).json({ error: "Produto não encontrado" });
+            return res.status(404).json({ error: "Produto não encontrado no banco." });
         }
 
         res.json(data);
@@ -51,7 +50,6 @@ router.post('/', async (req, res, next) => {
     try {
         const { nome, preco, imagem_url, info } = req.body;
 
-        // Validação simples de campos obrigatórios
         if (!nome || !preco) {
             return res.status(400).json({ 
                 sucesso: false, 
@@ -59,7 +57,7 @@ router.post('/', async (req, res, next) => {
             });
         }
 
-        // Insere o produto no Supabase e pede para retornar o item criado (.select())
+        // Insere o produto diretamente nas colunas da sua tabela do Supabase
         const { data, error } = await supabase
             .from('produtos')
             .insert([{ nome, preco, imagem_url, info }])
